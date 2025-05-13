@@ -8,6 +8,7 @@
 
 Fusion is a sensor fusion library for Inertial Measurement Units (IMUs), optimised for embedded systems.  Fusion is a C library but is also available as the Python package, [imufusion](https://pypi.org/project/imufusion/).  Two example Python scripts, [simple_example.py](https://github.com/xioTechnologies/Fusion/blob/main/Python/simple_example.py) and [advanced_example.py](https://github.com/xioTechnologies/Fusion/blob/main/Python/advanced_example.py) are provided with example sensor data to demonstrate use of the package.
 
+
 ## AHRS algorithm
 
 The Attitude And Heading Reference System (AHRS) algorithm combines gyroscope, accelerometer, and magnetometer data into a single measurement of orientation relative to the Earth.  The algorithm also supports systems that use only a gyroscope and accelerometer, and systems that use a gyroscope and accelerometer combined with an external source of heading measurement such as GPS.
@@ -111,3 +112,63 @@ m<sub>c</sub> = S(m<sub>u</sub> - h)
 ## Fast inverse square root
 
 Fusion uses [Pizer's implementation](https://pizer.wordpress.com/2008/10/12/fast-inverse-square-root/) of the [fast inverse square root](https://en.wikipedia.org/wiki/Fast_inverse_square_root) algorithm for vector and quaternion normalisation.  Including the definition `FUSION_USE_NORMAL_SQRT` in [FusionMath.h](https://github.com/xioTechnologies/Fusion/blob/main/Fusion/FusionMath.h) or adding this as a preprocessor definition will use normal square root operations for all normalisation calculations.  This will slow down execution speed for a small increase in accuracy.  The increase in accuracy will typically be too small to observe on any practical system.
+
+## install / use
+
+    pip install .
+    mkcd build
+    cmake ..
+    make
+
+Test the python examples.
+
+Issue with numpy:
+If you run into an `ImportError: numpy.core.multiarray failed to import`, update numpy or install a specific numpy version, for example:
+
+    pip install numpy==1.24
+
+## Usage notes
+
+### axis alignments
+
+It does not matter if you align the magnetometer with the other sensors; align the other sensors with the magnetometer; or align all sensors to some arbitrary axes. Choose your XYZ axes directions and then use measurements corresponding to those directions.
+
+[ref_issue187](https://github.com/xioTechnologies/Fusion/issues/187)
+
+### compare results from C and python
+
+See ./ProcessCSV_example and [issue 99](https://github.com/xioTechnologies/Fusion/issues/99)
+main.c and .py code both process a .csv file (simulated or otherwise) and the output can be plot for comparison.
+
+### hard/soft iron magnetometer calibration
+
+The present code  `Fusion` uses m = S ( u − h ), same as Magneto. Fusion used to use the calibration model `m_c = S*m_u - h`
+sources: [issue 195](https://github.com/xioTechnologies/Fusion/issues/195), [issue 29](https://github.com/xioTechnologies/Fusion/issues/29)
+
+    mc is the calibrated magnetometer measurement and return value
+    mu is the uncalibrated magnetometer measurement and uncalibrated argument
+    S is the soft iron matrix and softIronMatrix argument
+    h is the hard iron offset vector and hardIronOffset argument
+
+Other reference for hard/soft iron calibration: NXP AN5019 , esp. Section 6.6.3 Offset calibration.
+
+### How to get the Gravity data
+
+This feature is included in V1.2.7
+One can get gravity from the `imufusion.Ahrs` object
+
+Ref: [issue182](https://github.com/xioTechnologies/Fusion/issues/182)
+
+### build for raspberry pi
+
+    pip3 uninstall numpy # remove previously installed version
+    sudo apt install python3-numpy
+    Clone repo
+    cd Fusion/Python/Python-C-API
+    python3 setup.py # or `pip install .`
+    cd dist
+    unzip imufusion-1.0.1-py3.9-linux-armv7l.egg
+    cp imufusion.cpython-39-arm-linux-gnueabihf.so and imufusion.py to project libraries
+    import numpy, imufusion
+
+ref: [issue 7](https://github.com/xioTechnologies/Fusion/issues/7)
